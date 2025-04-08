@@ -16,19 +16,19 @@ from astropy.units import Quantity
 #Valores constantes a variar
 #Todo se trabaja en t[días] d[radios terrestres] m[masas terrestres]
 
-#print((9658.32210*u.km).to(u.R_earth))
 
-t_cero = Time('2025-03-31 00:00:00', format='iso', scale='utc')
-#print('t = 0 =', t_cero.mjd)
-
-print('Se tomará como cuerpo atractor a la tierra')
+print('Se tomará como cuerpo atractor a la tierra (la unidad de radio terrestre se nota como "earthRad")')
 smy = Quantity(input('Da el valor del semieje mayor con unidades separadas de un espacio: '))
 exc = float(input('Da el valor de la excentricidad: '))
 omg = Quantity(input('Da el valor del argumento del pericentro (deg: grados, rad: radianes): '))
 t_ini = Time(input('Ingresa el tiempo de paso por el pericentro en formato AAAA-MM-DD hh:mm:ss (ejemplo: 2025-04-06 14:30:00): '), format='iso', scale='utc')
 t_calc = Time(input('Ingresa el tiempo al que quieres calcular la posición con el mismo formato: '), format='iso', scale='utc')
-#print((t_calc-t_ini).to(u.hour))
-#print(t_ini.mjd-t_cero.mjd)
+
+# smy = 1.30262*u.R_earth
+# exc = 0.16561
+# omg = 15*u.deg
+# t_ini = Time('2025-03-31 00:00:00', format='iso', scale='utc')
+# t_calc = Time('2025-04-01 00:00:00', format='iso', scale='utc')
 
 #---------- Constantes sin dimensiones ------------
 
@@ -42,12 +42,8 @@ M = 1               #Masa del objeto
 mu = G0*M            #parámetro gravitacional
 c = np.sqrt(a**3/mu)#sqrt(mu/a**3) constante
 t = ((t_calc-t_ini).to(u.hour)).value             #tiempo a medir la posición
-
 Tperiodo = 2*np.pi*c#Periodo
 
-print('Periodo=',Tperiodo)
-
-#print('Volverá a estar en la misma posición en', Tvuelt.iso)
 
 #------------ Iterpolación Cúbica de Hermite --------------------
 '''
@@ -138,14 +134,14 @@ def orbit():
 #-------------- Fecha a partir del radio
 def date(r0):
     if r0 < (a-e*a) or r0 > (a+e*a):
-        return print('Igrese un radio entre ',a-e*a,' y ', a+e*a )
+        return print('Igrese un radio entre ',a-e*a,' y ', a+e*a,' radios terrestres', sep='')
     elif e==1:
         return print('En todo momento se encuentra en esta distancia, pues la órbita es circular')
     else:
-        f0 = np.arccos((a*(1-e**2)/r0-1)/e) - omega
+        f0 = np.arccos((a*(1-e**2)/r0-1)/e)+omega
         E0r0 = 2*np.arctan(np.sqrt((1-e)/(1+e))*np.tan(f0/2))
-        T0 = E0r0*c - e*np.sin(E0r0)*c + t0
-        return print('El primer tiempo de paso por esta distancia es ', Time((T0+t_ini.mjd),format='mjd', scale='utc').iso)
+        T0 = (E0r0*c - e*np.sin(E0r0)*c + t0)*u.hour
+        return print('El primer tiempo de paso por esta distancia es ', (T0+t_ini).iso)
 
 
 fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})  # Set polar projection
@@ -156,16 +152,10 @@ ax.yaxis.set_visible(False)  # Oculta completamente las líneas de los radios
 ax.spines['polar'].set_visible(False) #Oculta el encuadre exterior
 
 #---------------- Corrección para t y t0 muy grandes -----------------
-tinicial = t
-while t0 > Tperiodo:
-    t0 -= Tperiodo
-    #print('t0=',t0)
-#print('t=',t)
+
 while t > Tperiodo:
     t -= Tperiodo
-    #print('t=',(Time(t+t_ini,format='mjd', scale='utc').iso))
-if (t0+t)>Tperiodo:
-    t0 -= Tperiodo
+    
 
 #------- Creación de los puntos y puntos de gráfica polar -----------
 N = 20 #número de puntos
@@ -176,6 +166,7 @@ for i in range(N+1): #Matriz de las coordenadas experimentales (E,t)
     Coord[i,1] = T(Coord[i,0])  #tiempo
 Ecoord = Coord[:,0] #Coordenadas experimentales E
 tcoord = Coord[:,1] #Coordenadas experimentales t
+#print('Ecoord', Ecoord)
 #print('tcoord',tcoord)
 #ax.scatter(tcoord, Ecoord, color='red', s=1) #theta, r, color, tamaño
 #ax.scatter(Ecoord, tcoord, color='blue', s=1)
@@ -200,21 +191,30 @@ else:
     dtinterpdE = dtdE[texp(tcoord,t):texp(tcoord,t)+2] #derivadas
     E0 = R(Einterp[0],Einterp[1]) #raíz t(E)-t    
     Fv = f(E0) #anomalía verdadera
-    
     phi = Fv + omega #coordenada angular en t
 
-d_foco = a*(1-e**2)/(1+e*np.cos(phi))
+d_foco = a*(1-e**2)/(1+e*np.cos(Fv))
 
 angulo = np.floor((phi*u.rad).to(u.deg)*100)/100
 radiopaso = np.floor((d_foco*u.R_earth)*1000)/1000
-print('Las coordenas (phi,r) son (',angulo.value,'°, ',radiopaso,') el ', t_calc, sep='')
+print('Las coordenas (phi,r) son (',angulo.value,'°, ',radiopaso.to(u.km),') el ', t_calc, sep='')
 
 orbit()
 
-date(1.5)
+date(((Quantity(input('Da el valor de la distancia a la que quieres conocer el tiempo de paso: '))).to(u.R_earth)).value)
 
-
-
+#
+tx=np.linspace(0+1e-2,Tperiodo,100)
+for tm in tx:
+    t=tm
+    tinterp = tcoord[texp(tcoord,tm):texp(tcoord,tm)+2]
+    Einterp = Ecoord[texp(tcoord,tm):texp(tcoord,tm)+2]
+    dtinterpdE = dtdE[texp(tcoord,tm):texp(tcoord,tm)+2]
+    E0 = R(Einterp[0],Einterp[1]) #raíz t(E)-t
+    Fv = f(E0) #anomalía verdadera
+    phi = Fv + omega #coordenada angular en t
+    d_foco = a*(1-e**2)/(1+e*np.cos(Fv))
+    ax.scatter(phi,d_foco,color='blue',s=1)
 
 
 
