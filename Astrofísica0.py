@@ -22,9 +22,9 @@ t_cero = Time('2025-03-31 00:00:00', format='iso', scale='utc')
 #print('t = 0 =', t_cero.mjd)
 
 print('Se tomará como cuerpo atractor a la tierra')
-smy = 1.3*u.R_earth#Quantity(input('Da el valor del semieje mayor con unidades separadas de un espacio: '))
-exc = 0.16#float(input('Da el valor de la excentricidad: '))
-omg = 15*u.deg #15*u.deg#Quantity(input('Da el valor del argumento del pericentro (deg: grados, rad: radianes): '))
+smy = Quantity(input('Da el valor del semieje mayor con unidades separadas de un espacio: '))
+exc = float(input('Da el valor de la excentricidad: '))
+omg = Quantity(input('Da el valor del argumento del pericentro (deg: grados, rad: radianes): '))
 t_ini = Time(input('Ingresa el tiempo de paso por el pericentro en formato AAAA-MM-DD hh:mm:ss (ejemplo: 2025-04-06 14:30:00): '), format='iso', scale='utc')
 t_calc = Time(input('Ingresa el tiempo al que quieres calcular la posición con el mismo formato: '), format='iso', scale='utc')
 #print((t_calc-t_ini).to(u.hour))
@@ -156,16 +156,16 @@ ax.yaxis.set_visible(False)  # Oculta completamente las líneas de los radios
 ax.spines['polar'].set_visible(False) #Oculta el encuadre exterior
 
 #---------------- Corrección para t y t0 muy grandes -----------------
-#tinicial = t
-#while t0 > Tperiodo:
-#    t0 -= Tperiodo
-#    #print('t0=',t0)
+tinicial = t
+while t0 > Tperiodo:
+    t0 -= Tperiodo
+    #print('t0=',t0)
 #print('t=',t)
 while t > Tperiodo:
     t -= Tperiodo
     #print('t=',(Time(t+t_ini,format='mjd', scale='utc').iso))
-#if (t0+t)>Tperiodo:
-#    t0 -= Tperiodo
+if (t0+t)>Tperiodo:
+    t0 -= Tperiodo
 
 #------- Creación de los puntos y puntos de gráfica polar -----------
 N = 20 #número de puntos
